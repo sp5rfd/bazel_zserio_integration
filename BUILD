@@ -1,13 +1,17 @@
 
 cc_binary(
     name = "demo",
-    srcs = ["main.cpp", "//base:Point.h", "//base:Base.cpp", "//data:Vector.h", "//data:Data.cpp"],
+    # srcs = glob(["**/*.cpp", "**/*.h"]) + ["//zserio:base"],
+    srcs = ["main.cpp", "data/Vector.h", "data/Data.cpp", "//zserio:base"],
     copts = [
         "-I.",
-        # "-Ibase",
-    #     "-Idata"
+        # "-Izserio"
+    ],
+    includes = [
+        "base"
     ],
     deps = [
-        "@zserio_runtime"
-    ]
+        "@zserio_runtime",
+    ],
+    # visibility = ["//visibility:public"]
 )
