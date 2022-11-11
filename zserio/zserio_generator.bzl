@@ -1,42 +1,38 @@
-
 def input_files():
     return [
         "base.zs",
         "data.zs"
     ]
 
-
 def expected_outputs_base():
     return [
-        "base/Base.cpp",
-        "base/Point.h"
+        "_/base/Base.cpp",
+        "_/base/Point.h"
     ]
-
 
 def expected_outputs_data():
     return [
-        "data/Data.cpp",
-        "data/Vector.h"
+        "_/data/Data.cpp",
+        "_/data/Vector.h"
     ]
-        
+
+def expected_outputs():
+    return expected_outputs_base() + expected_outputs_data()
 
 def _impl(ctx):
-    name = ctx.attr.name
     java = ctx.attr._jdk[java_common.JavaRuntimeInfo]
 
     # inputs
     zserio_jar = ctx.file._zserio_jar
-    zserio_template = ctx.file.zserio_template
     ins = [ 
         zserio_jar,
-        zserio_template,
     ] + ctx.files._jdk + ctx.files.input_files
 
     # outputs
-    cpp_dir = ctx.actions.declare_directory(".")
+    cpp_dir = ctx.actions.declare_directory("./_")  # dig more here
     outs = [
         cpp_dir,
-    ] + ctx.outputs.output_files
+    ] + ctx.outputs.outputs_base + ctx.outputs.outputs_data
 
     # other params
     src_dir = "zserio"
@@ -45,15 +41,13 @@ def _impl(ctx):
         inputs = ins,
         outputs = outs,
         command = """
-            echo NAME: {name} JAVA: {java} , ZSERIO: {zserio}, CPP: {cpp_dir}, SRC: {src_dir}, ZS: {zserio_template},{name}.zs
-            {java} -jar {zserio} -cpp {cpp_dir} -src {src_dir} {name}.zs
+            {java} -jar {zserio} -cpp {cpp_dir} -src {src_dir} base.zs
+            {java} -jar {zserio} -cpp {cpp_dir} -src {src_dir} data.zs
         """.format(
-            name = name,
             java = java.java_executable_exec_path,
             zserio = zserio_jar.path,
             cpp_dir = cpp_dir.path,
             src_dir = src_dir,
-            zserio_template = zserio_template.path
         )
     )
 
@@ -74,38 +68,38 @@ zserio_codegen = rule(
             default = Label("@zserio_bin"),
             allow_single_file = True
         ),
-        "zserio_template": attr.label(
-            allow_single_file = True
-        ),
         "input_files": attr.label_list(
             default = input_files(),
             allow_files = True
         ),
-        "output_files": attr.output_list()
+
+        # "output_files": attr.output_list(),
+        "outputs_base": attr.output_list(),
+        "outputs_data": attr.output_list(),
     }
 )
 
 
-def create_model(name, output_files):
+def create_model(name):
     # generate zSerio code
     zserio_codegen(
-        name = name,
-        zserio_template = name + ".zs",
-        output_files = output_files,
+        name = name + "_",
+        # output_files = expected_outputs(),
+        outputs_base = expected_outputs_base(),
+        outputs_data = expected_outputs_data(),
         visibility = ["//visibility:public"],
-    ) 
-    
-    # print("kompiluje libke")
- 
-    # native.cc_library(
-    #     name = name,
-    #     srcs = output_files,
-    #     includes = [
-    #         "."
-    #     ],
-    #     deps = [
-    #         "@zserio_runtime"
-    #     ],
-    #     visibility = ["//visibility:public"],
-    # )
+    )
+
+    # compile library out of generated code
+    native.cc_library(
+        name = name,
+        srcs = expected_outputs(),
+        includes = [
+            "_"
+        ],
+        deps = [
+            "@zserio_runtime"
+        ],
+        visibility = ["//visibility:public"],
+    )
     
