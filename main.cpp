@@ -8,7 +8,7 @@ int main() {
     pointX.setValue(1.23);
     pointY.setValue(2.34);
     pointZ.setValue(3.45);
-    
+
     data::Vector vector;
     vector.setX(pointX);
     vector.setY(pointY);
