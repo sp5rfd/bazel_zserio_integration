@@ -41,8 +41,10 @@ def _impl(ctx):
         inputs = ins,
         outputs = outs,
         command = """
-            {java} -jar {zserio} -cpp {cpp_dir} -src {src_dir} base.zs
-            {java} -jar {zserio} -cpp {cpp_dir} -src {src_dir} data.zs
+            for name in base.zs data.zs 
+            do
+                {java} -jar {zserio} -cpp {cpp_dir} -src {src_dir} $name
+            done
         """.format(
             java = java.java_executable_exec_path,
             zserio = zserio_jar.path,
